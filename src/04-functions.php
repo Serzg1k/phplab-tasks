@@ -35,7 +35,9 @@ function sayHelloArgument($arg)
  */
 function sayHelloArgumentWrapper($arg)
 {
-    // put your code here
+    if(!is_string($arg) && !is_bool($arg) && !is_numeric($arg)){
+        throw new InvalidArgumentException('arg is not: number, string or bool',404);
+    }
 
     return sayHelloArgument($arg);
 }
@@ -64,10 +66,16 @@ function countArguments()
  * You will need to use "Argument unpacking via ..." to pass the parameters to wrapped function:
  * @see https://www.php.net/manual/en/migration56.new-features.php#migration56.new-features.splat
  *
+ * @param $arg
  * @return array
  * @throws InvalidArgumentException
  */
-function countArgumentsWrapper()
+function countArgumentsWrapper($arg)
 {
-    // put your code here
+    $count_argument = countArguments(...$arg);
+    foreach ($count_argument['argument_values'] as $value){
+        if(!is_string($value)){
+            throw new InvalidArgumentException('not all args is string',404);
+        }
+    }
 }
