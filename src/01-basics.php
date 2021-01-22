@@ -12,6 +12,17 @@
  */
 function getMinuteQuarter(int $minute)
 {
+    if($minute > 0 && $minute <=15) {
+        return 'first';
+    }elseif ($minute > 15 && $minute <= 30){
+        return 'second';
+    }elseif ($minute > 30 && $minute <= 45){
+        return 'third';
+    }elseif ($minute > 45 && $minute <= 60 || $minute === 0){
+        return 'fourth';
+    }elseif ($minute < 0 || $minute > 60) {
+        throw new InvalidArgumentException('minute is negative of greater then 60', 400);
+    }
 }
 
 /**
@@ -27,6 +38,17 @@ function getMinuteQuarter(int $minute)
  */
 function isLeapYear(int $year)
 {
+    if($year < 1900) {
+        throw new InvalidArgumentException('year is lower then 1900', 400);
+    }
+    $year = $year . '-01-01';
+    $ts = strtotime($year);
+    if(date('L', $ts) == 1){
+        return true;
+    }
+    return false;
+    // @todo IntlGregorianCalendar don't work
+    //return \IntlGregorianCalendar::createInstance()->isLeapYear(2020);
 }
 
 /**
@@ -42,4 +64,17 @@ function isLeapYear(int $year)
  */
 function isSumEqual(string $input)
 {
+    if(strlen((string)$input) !== 6) {
+        throw new InvalidArgumentException('input contains more then 6 digits', 400);
+    }
+    $first_digit = 0;
+    $second_digit = 0;
+    for($i = 0; $i < 6; $i++){
+        if($i < 3){
+            $first_digit += $input[$i];
+        }else{
+            $second_digit += $input[$i];
+        }
+    }
+    return ($first_digit === $second_digit);
 }
