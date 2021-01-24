@@ -9,6 +9,7 @@ $airports = require './airports.php';
  * and apply filtering by First Airport Name Letter and/or Airport State
  * (see Filtering tasks 1 and 2 below)
  */
+$filter = (isset($_GET['filter']) && !empty($_GET['filter'])) ? $_GET['filter'] : false;
 
 // Sorting
 /**
@@ -16,6 +17,7 @@ $airports = require './airports.php';
  * and apply sorting
  * (see Sorting task below)
  */
+$sorting = (isset($_GET['sorting']) && !empty($_GET['sorting'])) ? $_GET['sorting'] : false;
 
 // Pagination
 /**
@@ -23,6 +25,7 @@ $airports = require './airports.php';
  * and apply pagination logic
  * (see Pagination task below)
  */
+$pagination = (isset($_GET['pagination']) && !empty($_GET['pagination'])) ? $_GET['pagination'] : false;
 ?>
 <!doctype html>
 <html lang="en">
