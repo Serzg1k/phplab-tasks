@@ -25,7 +25,7 @@ $sorting = (isset($_GET['sorting']) && !empty($_GET['sorting'])) ? $_GET['sortin
  * and apply pagination logic
  * (see Pagination task below)
  */
-$pagination = (isset($_GET['pagination']) && !empty($_GET['pagination'])) ? $_GET['pagination'] : false;
+$page = (isset($_GET['page']) && !empty($_GET['page'])) ? $_GET['page'] : 1;
 ?>
 <!doctype html>
 <html lang="en">
@@ -54,9 +54,8 @@ $pagination = (isset($_GET['pagination']) && !empty($_GET['pagination'])) ? $_GE
     -->
     <div class="alert alert-dark">
         Filter by first letter:
-
-        <?php foreach (getUniqueFirstLetters(require './airports.php') as $letter): ?>
-            <a href="#"><?= $letter ?></a>
+        <?php foreach (getUniqueFirstLetters($airports) as $letter): ?>
+            <a href="<?= addQueryArgs('filter_by_first_letter', $letter) ?>"><?= $letter ?></a>
         <?php endforeach; ?>
 
         <a href="/" class="float-right">Reset all filters</a>
@@ -75,10 +74,10 @@ $pagination = (isset($_GET['pagination']) && !empty($_GET['pagination'])) ? $_GE
     <table class="table">
         <thead>
         <tr>
-            <th scope="col"><a href="#">Name</a></th>
-            <th scope="col"><a href="#">Code</a></th>
-            <th scope="col"><a href="#">State</a></th>
-            <th scope="col"><a href="#">City</a></th>
+            <th scope="col"><a href="<?= addQueryArgs('filter', 'name') ?>">Name</a></th>
+            <th scope="col"><a href="<?= addQueryArgs('filter', 'code') ?>">Code</a></th>
+            <th scope="col"><a href="<?= addQueryArgs('filter', 'state') ?>">State</a></th>
+            <th scope="col"><a href="<?= addQueryArgs('filter', 'city') ?>">City</a></th>
             <th scope="col">Address</th>
             <th scope="col">Timezone</th>
         </tr>
@@ -95,14 +94,14 @@ $pagination = (isset($_GET['pagination']) && !empty($_GET['pagination'])) ? $_GE
                i.e. if you have filter_by_first_letter set you can additionally use filter_by_state
         -->
         <?php foreach ($airports as $airport): ?>
-        <tr>
-            <td><?= $airport['name'] ?></td>
-            <td><?= $airport['code'] ?></td>
-            <td><a href="#"><?= $airport['state'] ?></a></td>
-            <td><?= $airport['city'] ?></td>
-            <td><?= $airport['address'] ?></td>
-            <td><?= $airport['timezone'] ?></td>
-        </tr>
+            <tr>
+                <td><?= $airport['name'] ?></td>
+                <td><?= $airport['code'] ?></td>
+                <td><a href="<?= addQueryArgs('filter_by_state', $airport['state'][0] ) ?>"><?= $airport['state'] ?></a></td>
+                <td><?= $airport['city'] ?></td>
+                <td><?= $airport['address'] ?></td>
+                <td><?= $airport['timezone'] ?></td>
+            </tr>
         <?php endforeach; ?>
         </tbody>
     </table>
@@ -116,13 +115,20 @@ $pagination = (isset($_GET['pagination']) && !empty($_GET['pagination'])) ? $_GE
          - use page key (i.e. /?page=1)
          - when you apply pagination - all filters and sorting are not reset
     -->
-    <nav aria-label="Navigation">
-        <ul class="pagination justify-content-center">
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-        </ul>
-    </nav>
+    <?php $page_count = getPaginateCount($airports, 30) ?>
+    <?php if($page_count > 1){ ?>
+        <nav aria-label="Navigation">
+            <ul class="pagination justify-content-center">
+                <?php for( $i=1; $i <= $page_count; $i++ ) { ?>
+                    <?php if( $page == $i) { ?>
+                        <li class="page-item active"><a class="page-link"><?= $i ?></a></li>
+                    <?php } else { ?>
+                        <li class="page-item"><a class="page-link" href="<?= addQueryArgs('page', $i ) ?>"><?= $i ?></a></li>
+                    <?php } ?>
+                <?php } ?>
+            </ul>
+        </nav>
+    <?php } ?>
 
 </main>
 </html>
