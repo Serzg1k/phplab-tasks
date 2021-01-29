@@ -1,4 +1,7 @@
 <?php
+
+define( 'ITEMS_PER_PAGE', 10 );
+
 /**
  * The $airports variable contains array of arrays of airports (see airports.php)
  * What can be put instead of placeholder so that function returns the unique first letter of each airport name
@@ -23,13 +26,6 @@ function getUniqueFirstLetters(array $airports)
     return $first_word;
 }
 
-/**
- * Build get params
- *
- * @param  string  $key
- * @param  string  $value
- * @return string
- */
 function addQueryArgs( $key, $value){
     $get_args = $_GET;
     $get_args[$key] = $value;
@@ -51,11 +47,75 @@ function addQueryArgs( $key, $value){
  * Get paginate count
  *
  * @param  array  $airports
- * @param  numeric  $items_per_page
  * @return string
  */
-function getPaginateCount(array $airports, $items_per_page = 5){
-    $count = count($airports);
+function getPaginateCount(array $airports){
 
-    return gmp_div_q($count, $items_per_page);
+    if(array_key_exists( 'filter_by_first_letter', $_GET )){
+        $airports = get_first_letter($airports, $_GET, 'filter_by_first_letter','name');
+    }
+    if(array_key_exists( 'filter_by_state', $_GET )){
+        $airports = get_first_letter($airports, $_GET, 'filter_by_state', 'state');
+    }
+    $count = count($airports);
+    return gmp_div_q($count, ITEMS_PER_PAGE, GMP_ROUND_PLUSINF);
+}
+
+/**
+ * Get airports
+ *
+ * @param  array  $search_params
+ * @return array
+ */
+function get_airports(array $search_params){
+    $airports = require './airports.php';
+
+    if(array_key_exists( 'filter_by_first_letter', $search_params )){
+        $airports = get_first_letter($airports, $search_params, 'filter_by_first_letter', 'name');
+    }
+    if(array_key_exists( 'filter_by_state', $search_params )){
+        $airports = get_first_letter($airports, $search_params, 'filter_by_state', 'state');
+    }
+    if(array_key_exists( 'filter', $search_params)) {
+        usort($airports, function ($a, $b) use($search_params){
+            $c = strcmp($a[$search_params['filter']], $b[$search_params['filter']]);
+            return $c;
+        });
+    }
+
+    return array_filter(array_values($airports), function ($value, $key) use ($search_params){
+        if( array_key_exists( 'page', $search_params) ) {
+            if($search_params['page'] == 1){
+                $item_from = 0;
+            }else{
+                $item_from = ($search_params['page'] - 1) * ITEMS_PER_PAGE;
+            }
+            $item_to = $search_params['page'] * ITEMS_PER_PAGE;
+            if( $key >= $item_from && $key < $item_to){
+                return $value;
+            }
+        }
+        elseif(empty($search_params) || !array_key_exists( 'page', $search_params)){
+            if( $key < ITEMS_PER_PAGE){
+                return $value;
+            }
+        }
+    }, ARRAY_FILTER_USE_BOTH);
+}
+
+/**
+ * Get first letters
+ *
+ * @param  array  $airports
+ * @param  array  $search_params
+ * @param  string  $value
+ * @param  string  $string
+ * @return array
+ */
+function get_first_letter (&$airports, $search_params, $value, $string){
+    return array_filter($airports, function ($val) use ($search_params, $value, $string){
+        if($search_params[$value] == $val[$string][0]){
+            return $val;
+        }
+    });
 }

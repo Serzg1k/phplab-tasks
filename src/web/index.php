@@ -1,7 +1,7 @@
 <?php
 require_once './functions.php';
-
 $airports = require './airports.php';
+$filtered = get_airports($_GET);
 
 // Filtering
 /**
@@ -93,7 +93,7 @@ $page = (isset($_GET['page']) && !empty($_GET['page'])) ? $_GET['page'] : 1;
              - when you apply filter_by_state, than filter_by_first_letter (see Filtering task #1) is not reset
                i.e. if you have filter_by_first_letter set you can additionally use filter_by_state
         -->
-        <?php foreach ($airports as $airport): ?>
+        <?php foreach ($filtered as $airport): ?>
             <tr>
                 <td><?= $airport['name'] ?></td>
                 <td><?= $airport['code'] ?></td>
@@ -115,7 +115,7 @@ $page = (isset($_GET['page']) && !empty($_GET['page'])) ? $_GET['page'] : 1;
          - use page key (i.e. /?page=1)
          - when you apply pagination - all filters and sorting are not reset
     -->
-    <?php $page_count = getPaginateCount($airports, 30) ?>
+    <?php $page_count = getPaginateCount($airports) ?>
     <?php if($page_count > 1){ ?>
         <nav aria-label="Navigation">
             <ul class="pagination justify-content-center">
