@@ -58,7 +58,7 @@ function getPaginateCount(array $airports){
         $airports = get_first_letter($airports, $_GET, 'filter_by_state', 'state');
     }
     $count = count($airports);
-    return gmp_div_q($count, ITEMS_PER_PAGE, GMP_ROUND_PLUSINF);
+    return ceil($count/ITEMS_PER_PAGE);
 }
 
 /**

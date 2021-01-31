@@ -31,13 +31,17 @@ function repeatArrayValues(array $input)
 function getUniqueValue(array $input)
 {
     $count_values = array_count_values($input);
-    $unique = 0;
-    foreach ($count_values as $value){
+    $unique = [];
+    foreach ($count_values as $key => $value){
         if($value === 1){
-            $unique++;
+            $unique[] = $key;
         }
     }
-    return $unique;
+    if(!empty($unique)){
+        return min($unique);
+    }else{
+        return 0;
+    }
 }
 
 /**
