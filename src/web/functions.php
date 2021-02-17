@@ -15,11 +15,9 @@ define( 'ITEMS_PER_PAGE', 10 );
 function getUniqueFirstLetters(array $airports)
 {
     $first_word = [];
-    if( is_array($airports) ) {
-        foreach ($airports as $airport) {
-            if( !in_array($airport['name'][0], $first_word) ){
-                $first_word[] = $airport['name'][0];
-            }
+    foreach ($airports as $airport) {
+        if( !in_array($airport['name'][0], $first_word) ){
+            $first_word[] = $airport['name'][0];
         }
     }
     sort($first_word);
@@ -69,7 +67,7 @@ function getPaginateCount(array $airports){
  */
 function get_airports(array $search_params){
     $airports = require './airports.php';
-
+    $page = isset($search_params['page']) ? $search_params['page'] : 1;
     if(array_key_exists( 'filter_by_first_letter', $search_params )){
         $airports = get_first_letter($airports, $search_params, 'filter_by_first_letter', 'name');
     }
@@ -81,6 +79,11 @@ function get_airports(array $search_params){
             $c = strcmp($a[$search_params['filter']], $b[$search_params['filter']]);
             return $c;
         });
+    }
+
+    if(count($airports) < (($page-1) * ITEMS_PER_PAGE)) {
+        $search_params['page'] = 1;
+        $_GET['page'] = 1;
     }
 
     return array_filter(array_values($airports), function ($value, $key) use ($search_params){
