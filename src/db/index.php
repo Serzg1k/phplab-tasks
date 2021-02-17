@@ -8,8 +8,37 @@
  * and https://www.w3resource.com/sql/select-statement/queries-with-distinct.php
  * and set the result to $uniqueFirstLetters variable
  */
-$uniqueFirstLetters = ['A', 'B', 'C'];
+$uniqueFirstLetters = getFirstLettersSql($pdo);
 
+function getFirstLettersSql($pdo){
+    $sth = $pdo->prepare("SELECT DISTINCT LEFT(name, 1) AS letter FROM airports ORDER BY LEFT(name, 1)");
+    $sth->setFetchMode(\PDO::FETCH_ASSOC);
+    $sth->execute();
+    $items = $sth->fetchAll();
+    $letters = [];
+    foreach ($items as $item){
+        $letters[] = $item['letter'];
+    }
+
+    return $letters;
+}
+
+function addQueryArgs( $key, $value){
+    $get_args = $_GET;
+    $get_args[$key] = $value;
+    $i = 0;
+    $ulr_params = '';
+    foreach ($get_args as $k => $v){
+        if($i === 0){
+            $ulr_params .= "?{$k}={$v}";
+        }else{
+            $ulr_params .= "&{$k}={$v}";
+        }
+        $i++;
+    }
+
+    return $ulr_params;
+}
 // Filtering
 /**
  * Here you need to check $_GET request if it has any filtering
@@ -47,7 +76,20 @@ $uniqueFirstLetters = ['A', 'B', 'C'];
  *
  * For city_name and state_name fields you can use alias https://www.mysqltutorial.org/mysql-alias/
  */
-$airports = [];
+function getAirports($pdo){
+    //@todo make filter and sort
+    $where = '';
+    $order_by = '';
+
+    $sth = $pdo->prepare("SELECT a.*, s.name AS state_name, LEFT(s.name, 1) AS state_first, c.name AS city_name  
+                            FROM airports AS a JOIN states AS s ON a.state_id = s.id 
+                            JOIN cities AS c ON a.city_id = c.id {$where} {$order_by}");
+    $sth->setFetchMode(\PDO::FETCH_ASSOC);
+    $sth->execute();
+    $items = $sth->fetchAll();
+    return $items;
+}
+$airports = getAirports($pdo);
 ?>
 <!doctype html>
 <html lang="en">
