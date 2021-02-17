@@ -2,7 +2,7 @@
 
 namespace src\oop\Commands;
 
-class ExpCommandCommand implements CommandInterface
+class ExpCommand implements CommandInterface
 {
     /**
      * @inheritdoc
