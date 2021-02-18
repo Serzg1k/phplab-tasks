@@ -2,13 +2,14 @@
 /**
  * Connect to DB
  */
-
+include 'pdo_ini.php';
+define( 'ITEMS_PER_PAGE', 10 );
 /**
  * SELECT the list of unique first letters using https://www.w3resource.com/mysql/string-functions/mysql-left-function.php
  * and https://www.w3resource.com/sql/select-statement/queries-with-distinct.php
  * and set the result to $uniqueFirstLetters variable
  */
-$uniqueFirstLetters = getFirstLettersSql($pdo);
+$uniqueFirstLetters = getFirstLettersSql($pdo);;
 
 function getFirstLettersSql($pdo){
     $sth = $pdo->prepare("SELECT DISTINCT LEFT(name, 1) AS letter FROM airports ORDER BY LEFT(name, 1)");
@@ -49,6 +50,20 @@ function addQueryArgs( $key, $value){
  * For filtering by state you will need to JOIN states table and check if states.name = A
  * where A - requested filter value
  */
+function getOrderParams(){
+    $order_by = '';
+    $filter = isset($_GET['filter']) ? $_GET['filter'] : '';
+    if($filter === 'name'){
+        $order_by = " ORDER BY a.name";
+    }elseif ($filter === 'code'){
+        $order_by = " ORDER BY a.code";
+    }elseif ($filter === 'state'){
+        $order_by = " ORDER BY s.name";
+    }elseif ($filter === 'city'){
+        $order_by = " ORDER BY c.name";
+    }
+    return $order_by;
+}
 
 // Sorting
 /**
@@ -59,6 +74,24 @@ function addQueryArgs( $key, $value){
  * For sorting use ORDER BY A
  * where A - requested filter value
  */
+function getWhereParams(){
+    $where = '';
+    $filter_by_first_letter = isset($_GET['filter_by_first_letter']) ? $_GET['filter_by_first_letter'] : false;
+    $filter_by_state = isset($_GET['filter_by_state']) ? $_GET['filter_by_state'] : false;
+    if($filter_by_first_letter || $filter_by_state){
+        $where = ' WHERE';
+    }
+    if($filter_by_first_letter) {
+        $where .= " a.name LIKE '{$filter_by_first_letter}%'";
+    }
+    if($filter_by_state) {
+        if($filter_by_first_letter) {
+            $where .= ' AND';
+        }
+        $where .= " s.name LIKE '{$filter_by_state}%'";
+    }
+    return $where;
+}
 
 // Pagination
 /**
@@ -69,6 +102,15 @@ function addQueryArgs( $key, $value){
  * For pagination use LIMIT
  * To get the number of all airports matched by filter use COUNT(*) in the SELECT statement with all filters applied
  */
+function getPagination($pdo){
+    $where = getWhereParams();
+    $order_by = '';
+    $sth = $pdo->prepare("SELECT COUNT(*) FROM airports AS a JOIN states AS s ON a.state_id = s.id  {$where} {$order_by}");
+    $sth->setFetchMode(\PDO::FETCH_ASSOC);
+    $sth->execute();
+    $items = $sth->fetchColumn();
+    return ceil($items/ITEMS_PER_PAGE);
+}
 
 /**
  * Build a SELECT query to DB with all filters / sorting / pagination
@@ -77,18 +119,33 @@ function addQueryArgs( $key, $value){
  * For city_name and state_name fields you can use alias https://www.mysqltutorial.org/mysql-alias/
  */
 function getAirports($pdo){
-    //@todo make filter and sort
-    $where = '';
-    $order_by = '';
-
+    $where = getWhereParams();
+    $order_by = getOrderParams();
+    $end = getLimitsAndOffset();
+    $paginate = getPagination($pdo);
+    if($end['page'] > $paginate){
+        $end['offset'] = ' OFFSET 0';
+    }
     $sth = $pdo->prepare("SELECT a.*, s.name AS state_name, LEFT(s.name, 1) AS state_first, c.name AS city_name  
                             FROM airports AS a JOIN states AS s ON a.state_id = s.id 
-                            JOIN cities AS c ON a.city_id = c.id {$where} {$order_by}");
+                            JOIN cities AS c ON a.city_id = c.id {$where} {$order_by} {$end['limit']} {$end['offset']}");
     $sth->setFetchMode(\PDO::FETCH_ASSOC);
     $sth->execute();
     $items = $sth->fetchAll();
     return $items;
 }
+
+function getLimitsAndOffset(){
+    $page = isset($_GET['page']) ? $_GET['page'] : 1;
+    $ofset = $page - 1;
+    $limit = ITEMS_PER_PAGE;
+    return [
+        'limit' => " LIMIT {$limit}",
+        'offset' => " OFFSET {$ofset}",
+        'page' => floatval($page)
+    ];
+}
+
 $airports = getAirports($pdo);
 ?>
 <!doctype html>
@@ -120,7 +177,7 @@ $airports = getAirports($pdo);
         Filter by first letter:
 
         <?php foreach ($uniqueFirstLetters as $letter): ?>
-            <a href="#"><?= $letter ?></a>
+            <a href="<?= addQueryArgs('filter_by_first_letter', $letter) ?>"><?= $letter ?></a>
         <?php endforeach; ?>
 
         <a href="/" class="float-right">Reset all filters</a>
@@ -139,10 +196,10 @@ $airports = getAirports($pdo);
     <table class="table">
         <thead>
         <tr>
-            <th scope="col"><a href="#">Name</a></th>
-            <th scope="col"><a href="#">Code</a></th>
-            <th scope="col"><a href="#">State</a></th>
-            <th scope="col"><a href="#">City</a></th>
+            <th scope="col"><a href="<?= addQueryArgs('filter', 'name') ?>">Name</a></th>
+            <th scope="col"><a href="<?= addQueryArgs('filter', 'code') ?>">Code</a></th>
+            <th scope="col"><a href="<?= addQueryArgs('filter', 'state') ?>">State</a></th>
+            <th scope="col"><a href="<?= addQueryArgs('filter', 'city') ?>">City</a></th>
             <th scope="col">Address</th>
             <th scope="col">Timezone</th>
         </tr>
@@ -162,7 +219,7 @@ $airports = getAirports($pdo);
         <tr>
             <td><?= $airport['name'] ?></td>
             <td><?= $airport['code'] ?></td>
-            <td><a href="#"><?= $airport['state_name'] ?></a></td>
+            <td><a href="<?= addQueryArgs('filter_by_state', $airport['state_first']) ?>"><?= $airport['state_name'] ?></a></td>
             <td><?= $airport['city_name'] ?></td>
             <td><?= $airport['address'] ?></td>
             <td><?= $airport['timezone'] ?></td>
@@ -180,13 +237,21 @@ $airports = getAirports($pdo);
          - use page key (i.e. /?page=1)
          - when you apply pagination - all filters and sorting are not reset
     -->
-    <nav aria-label="Navigation">
-        <ul class="pagination justify-content-center">
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-        </ul>
-    </nav>
+    <?php $page = (isset($_GET['page']) && !empty($_GET['page'])) ? $_GET['page'] : 1; ?>
+    <?php $page_count = getPagination($pdo); ?>
+    <?php if($page_count > 1){ ?>
+        <nav aria-label="Navigation">
+            <ul class="pagination justify-content-center">
+                <?php for( $i=1; $i <= $page_count; $i++ ) { ?>
+                    <?php if( $page == $i) { ?>
+                        <li class="page-item active"><a class="page-link"><?= $i ?></a></li>
+                    <?php } else { ?>
+                        <li class="page-item"><a class="page-link" href="<?= addQueryArgs('page', $i ) ?>"><?= $i ?></a></li>
+                    <?php } ?>
+                <?php } ?>
+            </ul>
+        </nav>
+    <?php } ?>
 
 </main>
 </html>
